@@ -16,7 +16,7 @@ import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.ElasticSearchTransportClientProvider;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfiguration;
-import com.netflix.conductor.elasticsearch.es6.EmbeddedElasticSearchV6;
+import com.netflix.conductor.elasticsearch.es7.EmbeddedElasticSearchV6;
 import com.netflix.conductor.support.TestUtils;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;

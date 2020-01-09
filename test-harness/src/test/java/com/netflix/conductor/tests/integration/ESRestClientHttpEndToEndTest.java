@@ -27,6 +27,10 @@ import com.netflix.conductor.jetty.server.JettyServer;
 import com.netflix.conductor.tests.utils.TestEnvironment;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.ws.rs.HttpMethod;
+
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -89,7 +93,10 @@ public class ESRestClientHttpEndToEndTest extends AbstractHttpEndToEndTest {
         params.put("wait_for_status", "green");
         params.put("timeout", "30s");
 
-        elasticSearchAdminClient.performRequest("GET", "/_cluster/health", params);
+        Request request = new Request(HttpMethod.GET, "/_cluster/health");
+        request.addParameters(params);
+
+        elasticSearchAdminClient.performRequest(request);
         logger.info("Elasticsearch Cluster ready in {} ms", System.currentTimeMillis() - startTime);
     }
 
