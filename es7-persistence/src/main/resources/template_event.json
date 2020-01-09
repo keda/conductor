@@ -32,11 +32,9 @@
         "index": true
       },
       "output": {
-        "properties": {
-          "workflowId": {
-            "type": "keyword",
-            "index": true
-          }
+        "workflowId": {
+          "type": "keyword",
+          "index": true
         }
       },
       "status": {
