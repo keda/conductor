@@ -42,12 +42,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.utils.ServiceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.validation.constraints.Max;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +51,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.validation.constraints.Max;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -77,7 +76,7 @@ public class ExecutionService {
 	private final ExternalPayloadStorage externalPayloadStorage;
 
     private final int taskRequeueTimeout;
-    private final int maxSearchSize;
+	private int queueTaskMessagePostponeSeconds;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
@@ -98,7 +97,7 @@ public class ExecutionService {
 		this.queueDAO = queueDAO;
 		this.externalPayloadStorage = externalPayloadStorage;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
-        this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
+		this.queueTaskMessagePostponeSeconds = config.getIntProperty("task.queue.message.postponeSeconds", 60);
 	}
 
 	public Task poll(String taskType, String workerId) {
@@ -137,6 +136,8 @@ public class ExecutionService {
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
+				    // Postpone a message, so that it would be available for poll again.
+					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
 					continue;
 				}
 
@@ -167,6 +168,7 @@ public class ExecutionService {
 			return null;
 		}
 		Task task = tasks.get(0);
+		ackTaskReceived(task);
 		logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
 		return task;
 	}
@@ -224,9 +226,12 @@ public class ExecutionService {
 	 */
 	public boolean ackTaskReceived(String taskId) {
 		return Optional.ofNullable(getTask(taskId))
-				.map(QueueUtils::getQueueName)
-				.map(queueName -> queueDAO.ack(queueName, taskId))
+				.map(this::ackTaskReceived)
 				.orElse(false);
+	}
+
+	public boolean ackTaskReceived(Task task) {
+		return queueDAO.ack(QueueUtils.getQueueName(task), task.getTaskId());
 	}
 
 	public Map<String, Integer> getTaskQueueSizes(List<String> taskDefNames) {
@@ -248,7 +253,7 @@ public class ExecutionService {
 
 	public int requeuePendingTasks() {
 		long threshold = System.currentTimeMillis() - taskRequeueTimeout;
-		List<WorkflowDef> workflowDefs = metadataDAO.getAll();
+		List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
 		int count = 0;
 		for (WorkflowDef workflowDef : workflowDefs) {
 			List<Workflow> workflows = workflowExecutor.getRunningWorkflows(workflowDef.getName(), workflowDef.getVersion());

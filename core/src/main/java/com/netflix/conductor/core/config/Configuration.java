@@ -73,8 +73,17 @@ public interface Configuration {
     String IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME = "workflow.decider.locking.exceptions.ignore";
     boolean IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE = false;
 
+    String EVENT_MESSAGE_INDEXING_ENABLED_PROPERTY_NAME = "worklfow.event.message.indexing.enabled";
+    boolean EVENT_MESSAGE_INDEXING_ENABLED_DEFAULT_VALUE = true;
+
     String TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME = "workflow.taskExecLog.indexing.enabled";
     boolean TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE = true;
+
+    String TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.taskdef.cache.refresh.time.seconds";
+    int TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
+
+    String EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.eventhandler.cache.refresh.time.seconds";
+    int EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
 
     //TODO add constants for input/output external payload related properties.
 
@@ -127,6 +136,12 @@ public interface Configuration {
      * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
      */
     boolean disableAsyncWorkers();
+
+    /**
+     *
+     * @return when set to true, message from the event processing are indexed
+     */
+    boolean isEventMessageIndexingEnabled();
 
     /**
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging
@@ -185,6 +200,21 @@ public interface Configuration {
     }
 
     /**
+     * @return the refresh time for the in-memory task definition cache
+     */
+    default int getTaskDefRefreshTimeSecsDefaultValue() {
+        return getIntProperty(TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME, TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the refresh time for the in-memory event handler cache
+     */
+    default int getEventHandlerRefreshTimeSecsDefaultValue() {
+        return getIntProperty(EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME,
+            EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE);
+    }
+
+    /**
      * @param name         Name of the property
      * @param defaultValue Default value when not specified
      * @return User defined integer property.
@@ -205,7 +235,7 @@ public interface Configuration {
         if (null == value || value.trim().length() == 0) {
             return defaultValue;
         }
-        return Boolean.valueOf(value.trim());
+        return Boolean.parseBoolean(value.trim());
     }
 
     /**
