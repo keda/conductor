@@ -16,10 +16,16 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
+ext {
+    REPOSITORY_HOME = 'http://172.16.60.188:8081'
+    REPOSITORY_URL =  REPOSITORY_HOME + "/nexus/content/groups/public"
+}
+
 apply plugin: 'project-report'
 apply from: "$rootDir/versionsOfDependencies.gradle"
 
 allprojects {
+    apply plugin: 'maven'
     apply plugin: 'idea'
     apply plugin: 'jacoco'
     apply plugin: 'eclipse'
@@ -30,6 +36,19 @@ allprojects {
         // oss-candidate for -rc.* verions:
         maven {
             url "https://dl.bintray.com/netflixoss/oss-candidate"
+        }
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                snapshotRepository(url: REPOSITORY_HOME + "/nexus/content/repositories/snapshots/") {
+                    authentication(userName: 'deployment', password: 'lemon888')
+                }
+                repository(url: REPOSITORY_HOME + "/nexus/content/repositories/releases/") {
+                    authentication(userName: 'deployment', password: 'lemon888')
+                }
+            }
         }
     }
 }
